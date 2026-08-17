@@ -54,7 +54,7 @@
                 Thông tin chi tiết
             </h3>
 
-            <form action="${pageContext.request.contextPath}/profile/update" method="POST">
+            <form action="${pageContext.request.contextPath}/profile/update" method="POST" enctype="multipart/form-data">
                 <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                     <div>
                         <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Tên tài khoản (Không thể đổi)</label>
@@ -86,11 +86,29 @@
                 </div>
 
                 <div style="margin-bottom: 28px;">
-                    <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Đường dẫn ảnh đại diện (Avatar URL)</label>
-                    <input type="text" id="avatar-input" name="avatar" value="${sessionScope.currentUser.avatar}" 
-                           placeholder="Dán link ảnh đại diện từ bên ngoài (https://...)" 
-                           style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
-                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">Bạn có thể dán đường dẫn ảnh bất kỳ từ internet vào đây để cập nhật ảnh đại diện.</p>
+                    <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Ảnh Đại Diện (Avatar)</label>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                        <button type="button" id="btn-tab-url" onclick="switchAvatarMode('url')" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #000; font-weight: 700; cursor: pointer;">Dán Link URL</button>
+                        <button type="button" id="btn-tab-file" onclick="switchAvatarMode('file')" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary); font-weight: 600; cursor: pointer;">Tải Ảnh Từ Máy Tính</button>
+                    </div>
+
+                    <!-- Ô 1: Dán link URL -->
+                    <div id="box-avatar-url">
+                        <input type="text" id="avatar-input" name="avatar" value="${sessionScope.currentUser.avatar}" 
+                               placeholder="Dán link ảnh đại diện từ bên ngoài (https://...)" 
+                               oninput="updateAvatarPreview(this.value)"
+                               style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">Bạn có thể dán đường dẫn ảnh bất kỳ từ internet vào đây.</p>
+                    </div>
+
+                    <!-- Ô 2: Tải file từ máy tính -->
+                    <div id="box-avatar-file" style="display: none;">
+                        <input type="file" id="avatar-file-input" name="avatarFile" accept="image/*" 
+                               onchange="previewAvatarFile(this)"
+                               style="width: 100%; padding: 10px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">Chọn file ảnh đại diện từ máy tính của bạn (JPG, PNG, WEBP...).</p>
+                    </div>
                 </div>
 
                 <div style="text-align: right; border-top: 1px solid var(--border-color); padding-top: 24px;">
@@ -105,18 +123,43 @@
 </div>
 
 <script>
-    // Live update preview khi người dùng nhập link ảnh đại diện mới
-    var avatarInput = document.getElementById('avatar-input');
-    var avatarPreview = document.getElementById('avatar-preview');
-
-    avatarInput.addEventListener('input', function() {
-        var url = avatarInput.value.trim();
-        if (url) {
-            avatarPreview.src = url;
+    function switchAvatarMode(mode) {
+        if (mode === 'url') {
+            document.getElementById('box-avatar-url').style.display = 'block';
+            document.getElementById('box-avatar-file').style.display = 'none';
+            document.getElementById('btn-tab-url').style.background = 'var(--accent)';
+            document.getElementById('btn-tab-url').style.color = '#000';
+            document.getElementById('btn-tab-file').style.background = 'var(--bg-tertiary)';
+            document.getElementById('btn-tab-file').style.color = 'var(--text-primary)';
         } else {
-            avatarPreview.src = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+            document.getElementById('box-avatar-url').style.display = 'none';
+            document.getElementById('box-avatar-file').style.display = 'block';
+            document.getElementById('btn-tab-file').style.background = 'var(--accent)';
+            document.getElementById('btn-tab-file').style.color = '#000';
+            document.getElementById('btn-tab-url').style.background = 'var(--bg-tertiary)';
+            document.getElementById('btn-tab-url').style.color = 'var(--text-primary)';
         }
-    });
+    }
+
+    function updateAvatarPreview(url) {
+        var preview = document.getElementById('avatar-preview');
+        if (url && url.trim() !== '') {
+            preview.src = url;
+        } else {
+            preview.src = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        }
+    }
+
+    function previewAvatarFile(input) {
+        var preview = document.getElementById('avatar-preview');
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 </script>
 
 <%@ include file="/WEB-INF/views/footer.jsp" %>

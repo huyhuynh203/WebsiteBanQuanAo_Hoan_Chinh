@@ -90,16 +90,26 @@ public class ProductServlet extends HttpServlet {
                         }
                     } catch (Exception ignored) {}
 
-                    if (colors.isEmpty()) {
+                    if (colors.size() < 2) {
                         colors.add("Trắng");
                         colors.add("Đen");
                     }
 
-                    if (sizes.isEmpty()) {
+                    if (sizes.size() < 2) {
                         sizes.add("M");
                         sizes.add("L");
                         sizes.add("XL");
+                        sizes.add("2XL");
+                        sizes.add("3XL");
+                        sizes.add("4XL");
+                        sizes.add("5XL");
                     }
+
+                    request.setAttribute("colorsSet", colors);
+                    request.setAttribute("sizesSet", sizes);
+                    poly.java.DAO.ProductImageDAO productImageDAO = new poly.java.DAO.Impl.ProductImageDAOImpl();
+                    List<poly.java.Entity.ProductImage> extraImages = productImageDAO.findByProduct(id);
+                    request.setAttribute("extraImages", extraImages);
 
                     request.setAttribute("colorsSet", colors);
                     request.setAttribute("sizesSet", sizes);

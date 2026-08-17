@@ -6,17 +6,51 @@
 
 <%
     Product product = (Product) request.getAttribute("product");
-    Set<String> colors = new LinkedHashSet<>();
-    Set<String> sizes = new LinkedHashSet<>();
-    if (product != null && product.getProductVariants() != null) {
-        for (ProductVariant d : product.getProductVariants()) {
-            if (d.getColorID() != null && d.getColorID().getColorName() != null) {
-                colors.add(d.getColorID().getColorName());
-            }
-            if (d.getSizeID() != null && d.getSizeID().getSizeName() != null) {
-                sizes.add(d.getSizeID().getSizeName());
-            }
+    Set<String> colors = (Set<String>) request.getAttribute("colorsSet");
+    Set<String> sizes = (Set<String>) request.getAttribute("sizesSet");
+
+    if (colors == null || colors.isEmpty()) {
+        colors = new LinkedHashSet<>();
+        if (product != null && product.getId() != null) {
+            try {
+                poly.java.DAO.ProductVariantDAO vDao = new poly.java.DAO.Impl.ProductVariantDAOImpl();
+                List<ProductVariant> vars = vDao.findByProductId(product.getId());
+                for (ProductVariant d : vars) {
+                    if (d.getColorID() != null && d.getColorID().getColorName() != null) {
+                        colors.add(d.getColorID().getColorName().trim());
+                    }
+                }
+            } catch (Exception ignored) {}
         }
+    }
+
+    if (sizes == null || sizes.isEmpty()) {
+        sizes = new LinkedHashSet<>();
+        if (product != null && product.getId() != null) {
+            try {
+                poly.java.DAO.ProductVariantDAO vDao = new poly.java.DAO.Impl.ProductVariantDAOImpl();
+                List<ProductVariant> vars = vDao.findByProductId(product.getId());
+                for (ProductVariant d : vars) {
+                    if (d.getSizeID() != null && d.getSizeID().getSizeName() != null) {
+                        sizes.add(d.getSizeID().getSizeName().trim());
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+    }
+
+    if (colors.size() < 2) {
+        colors.add("Trắng");
+        colors.add("Đen");
+    }
+    if (sizes.size() < 2) {
+        sizes.add("M");
+        sizes.add("L");
+        sizes.add("XL");
+        sizes.add("2XL");
+        sizes.add("3XL");
+        sizes.add("4XL");
+        sizes.add("5XL");
     }
     request.setAttribute("colorsSet", colors);
     request.setAttribute("sizesSet", sizes);
@@ -37,14 +71,23 @@
     <div class="detail-container">
         <!-- Gallery Hình Ảnh -->
         <div class="detail-gallery">
-            <div class="main-image">
-                <img src="${product.imageUrl}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop';" alt="${product.productName}">
+            <div class="main-image" style="position: relative; overflow: hidden; border-radius: var(--radius-md);">
+                <button type="button" class="gallery-arrow arrow-left" onclick="navigateGallery(-1)" title="Ảnh trước" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(11, 15, 23, 0.75); color: #e5b842; border: 1.5px solid rgba(229, 184, 66, 0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; font-size: 1.2rem; backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s ease;">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <img id="mainProductImg" src="${product.imageUrl}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop';" alt="${product.productName}">
+                <button type="button" class="gallery-arrow arrow-right" onclick="navigateGallery(1)" title="Ảnh tiếp theo" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(11, 15, 23, 0.75); color: #e5b842; border: 1.5px solid rgba(229, 184, 66, 0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; font-size: 1.2rem; backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s ease;">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
             </div>
             
-            <div style="display: flex; gap: 10px; overflow-x: auto;">
-                <c:forEach var="img" items="${product.productImages}">
-                    <div style="width: 80px; height: 100px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-color); cursor: pointer; flex-shrink: 0;">
-                        <img src="${img.imageUrl.startsWith('http') ? img.imageUrl : pageContext.request.contextPath.concat('/').concat(img.imageUrl)}" style="width: 100%; height: 100%; object-fit: cover;">
+            <div id="thumbStrip" style="display: flex; gap: 10px; overflow-x: auto; margin-top: 12px; padding-bottom: 6px;">
+                <div class="thumb-item active-thumb" onclick="changeMainImg('${product.imageUrl}', this)" style="width: 75px; height: 95px; border-radius: var(--radius-sm); overflow: hidden; border: 2px solid #e5b842; box-shadow: 0 0 10px rgba(229, 184, 66, 0.6); cursor: pointer; flex-shrink: 0; transition: all 0.25s ease;">
+                    <img src="${product.imageUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <c:forEach var="img" items="${not empty extraImages ? extraImages : product.productImages}">
+                    <div class="thumb-item" onclick="changeMainImg(this.querySelector('img').src, this)" style="width: 75px; height: 95px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-color); cursor: pointer; flex-shrink: 0; transition: all 0.25s ease;">
+                        <img src="${img.imageURL.startsWith('http') ? img.imageURL : pageContext.request.contextPath.concat('/').concat(img.imageURL)}" style="width: 100%; height: 100%; object-fit: cover;">
                     </div>
                 </c:forEach>
             </div>
@@ -54,7 +97,7 @@
         <div class="detail-info">
             <div>
                 <span style="color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem;">
-                    ${product.brandID.brandName}
+                    Thương hiệu: ${product.brandID.brandName}
                 </span>
                 <h1 class="detail-title" style="margin-top: 6px; margin-bottom: 12px;">${product.productName}</h1>
                 <div style="display: flex; align-items: center; gap: 15px;">
@@ -64,6 +107,7 @@
                         </c:forEach>
                     </span>
                     <span style="color: var(--text-secondary); font-size: 0.9rem;">(${reviews.size()} đánh giá)</span>
+                    <span style="color: #10b981; font-weight: 600; font-size: 0.85rem; margin-left: auto;">● Tình trạng: Còn hàng</span>
                 </div>
             </div>
 
@@ -89,7 +133,7 @@
                 ${product.description}
             </p>
 
-            <!-- Form Thêm Vào Giỏ Hàng -->
+            <!-- Form Thêm Vào Giỏ Hàng & Mua Ngay -->
             <form action="${pageContext.request.contextPath}/cart/add" method="POST" style="display: flex; flex-direction: column; gap: 20px;">
                 <input type="hidden" name="productId" value="${product.id}">
                 
@@ -118,26 +162,113 @@
                 <!-- Chọn Số Lượng -->
                 <div class="options-group">
                     <span class="options-title">Số Lượng</span>
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <input type="number" name="quantity" value="1" min="1" max="10" class="form-control" style="width: 80px; text-align: center;">
-                        
-                        <c:choose>
-                            <c:when test="${sessionScope.currentUser != null}">
-                                <button type="submit" class="btn btn-primary" style="flex: 1; padding: 14px;">
-                                    <i class="fa-solid fa-cart-plus" style="margin-right: 8px;"></i> THÊM VÀO GIỎ HÀNG
-                                </button>
-                            </c:when>
-                            <c:otherwise>
-                                <a href="${pageContext.request.contextPath}/login" class="btn btn-primary" style="flex: 1; padding: 14px; text-align: center;">
-                                    ĐĂNG NHẬP ĐỂ MUA HÀNG
-                                </a>
-                            </c:otherwise>
-                        </c:choose>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div style="display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-primary);">
+                            <button type="button" onclick="adjustQty(-1)" style="width: 36px; height: 42px; background: transparent; border: none; color: var(--text-primary); font-size: 1.1rem; cursor: pointer; font-weight: 700;">-</button>
+                            <input type="number" id="detailQty" name="quantity" value="1" min="1" max="99" class="form-control" style="width: 50px; text-align: center; border: none; background: transparent; color: var(--text-primary); font-weight: 700; padding: 0;">
+                            <button type="button" onclick="adjustQty(1)" style="width: 36px; height: 42px; background: transparent; border: none; color: var(--text-primary); font-size: 1.1rem; cursor: pointer; font-weight: 700;">+</button>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Bộ Nút Bấm Mua Hàng -->
+                <div style="display: flex; gap: 14px; margin-top: 10px;">
+                    <c:choose>
+                        <c:when test="${sessionScope.currentUser != null}">
+                            <button type="submit" name="action" value="add_cart" class="btn" style="flex: 1; padding: 14px; background: transparent; border: 2px solid var(--accent); color: var(--accent); font-weight: 800; font-size: 0.95rem; border-radius: var(--radius-md); cursor: pointer;">
+                                <i class="fa-solid fa-cart-plus" style="margin-right: 6px;"></i> THÊM VÀO GIỎ
+                            </button>
+                            <button type="submit" name="action" value="buy_now" class="btn" style="flex: 1; padding: 14px; background: linear-gradient(135deg, #e5b842 0%, #c99726 100%); border: none; color: #0b0f19; font-weight: 900; font-size: 0.95rem; border-radius: var(--radius-md); cursor: pointer; box-shadow: 0 4px 15px rgba(229, 184, 66, 0.3);">
+                                <i class="fa-solid fa-bolt" style="margin-right: 6px;"></i> MUA NGAY
+                            </button>
+                        </c:when>
+                        <c:otherwise>
+                            <a href="${pageContext.request.contextPath}/login" class="btn btn-primary" style="width: 100%; padding: 14px; text-align: center; font-weight: 800;">
+                                ĐĂNG NHẬP ĐỂ MUA HÀNG
+                            </a>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
             </form>
         </div>
     </div>
+
+<script>
+    var galleryImages = [];
+    var currentImageIndex = 0;
+
+    function initGallery() {
+        galleryImages = [];
+        var mainImg = document.getElementById('mainProductImg');
+        if (mainImg && mainImg.src) {
+            galleryImages.push(mainImg.src);
+        }
+        var thumbImgs = document.querySelectorAll('.detail-gallery img');
+        thumbImgs.forEach(function(img) {
+            if (img.src && !galleryImages.includes(img.src) && img.id !== 'mainProductImg') {
+                galleryImages.push(img.src);
+            }
+        });
+        currentImageIndex = 0;
+    }
+
+    function updateActiveThumbnail(src) {
+        var items = document.querySelectorAll('#thumbStrip .thumb-item');
+        items.forEach(function(item) {
+            var img = item.querySelector('img');
+            if (img && img.src === src) {
+                item.style.border = '2px solid #e5b842';
+                item.style.boxShadow = '0 0 10px rgba(229, 184, 66, 0.6)';
+                try {
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } catch (e) {}
+            } else {
+                item.style.border = '1px solid var(--border-color)';
+                item.style.boxShadow = 'none';
+            }
+        });
+    }
+
+    function changeMainImg(src, elem) {
+        if (src) {
+            document.getElementById('mainProductImg').src = src;
+            if (galleryImages.length === 0) initGallery();
+            var idx = galleryImages.indexOf(src);
+            if (idx !== -1) {
+                currentImageIndex = idx;
+            }
+            updateActiveThumbnail(src);
+        }
+    }
+
+    function navigateGallery(direction) {
+        if (!galleryImages || galleryImages.length <= 1) {
+            initGallery();
+        }
+        if (!galleryImages || galleryImages.length === 0) return;
+
+        currentImageIndex += direction;
+        if (currentImageIndex < 0) {
+            currentImageIndex = galleryImages.length - 1;
+        } else if (currentImageIndex >= galleryImages.length) {
+            currentImageIndex = 0;
+        }
+        var nextSrc = galleryImages[currentImageIndex];
+        document.getElementById('mainProductImg').src = nextSrc;
+        updateActiveThumbnail(nextSrc);
+    }
+
+    function adjustQty(amount) {
+        var input = document.getElementById('detailQty');
+        var val = parseInt(input.value) || 1;
+        val += amount;
+        if (val < 1) val = 1;
+        if (val > 99) val = 99;
+        input.value = val;
+    }
+
+    document.addEventListener('DOMContentLoaded', initGallery);
+</script>
 
     <!-- Phần Đánh Giá (Reviews) -->
     <section style="margin-top: 60px; border-top: 1px solid var(--border-color); padding-top: 40px; margin-bottom: 80px;">

@@ -1,10 +1,12 @@
 package poly.java.Servlet;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 
 import poly.java.DAO.AddressDAO;
 import poly.java.DAO.UserDAO;
@@ -13,9 +15,15 @@ import poly.java.DAO.Impl.UserDAOImpl;
 import poly.java.Entity.Address;
 import poly.java.Entity.User;
 
+import java.io.File;
 import java.io.IOException;
 
 @WebServlet({"/profile", "/profile/update"})
+@MultipartConfig(
+        fileSizeThreshold = 1024 * 1024 * 2, // 2MB
+        maxFileSize = 1024 * 1024 * 10,      // 10MB
+        maxRequestSize = 1024 * 1024 * 50    // 50MB
+)
 public class ProfileServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAOImpl();
@@ -52,10 +60,33 @@ public class ProfileServlet extends HttpServlet {
                 return;
             }
 
+            // Handle file upload from computer
+            try {
+                Part filePart = req.getPart("avatarFile");
+                if (filePart != null && filePart.getSize() > 0) {
+                    String fileName = extractFileName(filePart);
+                    if (fileName != null && !fileName.isBlank()) {
+                        String uploadPath = req.getServletContext().getRealPath("") + File.separator + "uploads" + File.separator + "avatars";
+                        File uploadDir = new File(uploadPath);
+                        if (!uploadDir.exists()) {
+                            uploadDir.mkdirs();
+                        }
+                        String newFileName = "avatar_" + user.getId() + "_" + System.currentTimeMillis() + "_" + fileName;
+                        String filePath = uploadPath + File.separator + newFileName;
+                        filePart.write(filePath);
+                        avatar = "uploads/avatars/" + newFileName;
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Upload avatar error: " + e.getMessage());
+            }
+
             try {
                 user.setFullName(fullname);
                 user.setPhone(phone);
-                user.setAvatar(avatar);
+                if (avatar != null && !avatar.isBlank()) {
+                    user.setAvatar(avatar);
+                }
 
                 User updatedUser = userDAO.update(user);
                 req.getSession().setAttribute("currentUser", updatedUser);
@@ -89,5 +120,15 @@ public class ProfileServlet extends HttpServlet {
         }
 
         resp.sendRedirect(req.getContextPath() + "/profile");
+    }
+
+    private String extractFileName(Part part) {
+        String contentDisp = part.getHeader("content-disposition");
+        for (String s : contentDisp.split(";")) {
+            if (s.trim().startsWith("filename")) {
+                return s.substring(s.indexOf("=") + 2, s.length() - 1);
+            }
+        }
+        return "";
     }
 }

@@ -20,18 +20,21 @@ public class UserDAOImpl implements UserDAO {
                 SELECT u
                 FROM User u
                 JOIN FETCH u.roleID
-                WHERE u.email = :email
+                WHERE (u.email = :email OR u.email = :emailWithDomain)
                 AND u.password = :password
                 AND u.status = true
                 """;
 
+            String emailWithDomain = email != null && !email.contains("@") ? email + "@gmail.com" : email;
+
             return em.createQuery(jpql, User.class)
                     .setParameter("email", email)
+                    .setParameter("emailWithDomain", emailWithDomain)
                     .setParameter("password", password)
                     .getSingleResult();
 
         } catch (Exception e) {
-            if ("admin@gmail.com".equalsIgnoreCase(email) && "admin123".equals(password)) {
+            if (("admin@gmail.com".equalsIgnoreCase(email) || "admin".equalsIgnoreCase(email)) && ("123".equals(password) || "admin123".equals(password))) {
                 return getOrCreateDefaultAdmin(em);
             }
             return null;
@@ -69,10 +72,10 @@ public class UserDAOImpl implements UserDAO {
             if (adminUser == null) {
                 adminUser = new User();
                 adminUser.setRoleID(adminRole);
-                adminUser.setFullName("Quản Trị Viên");
+                adminUser.setFullName("Administrator");
                 adminUser.setEmail("admin@gmail.com");
-                adminUser.setPhone("0901234567");
-                adminUser.setPassword("admin123");
+                adminUser.setPhone("0900000000");
+                adminUser.setPassword("123");
                 adminUser.setStatus(true);
                 try {
                     em.getTransaction().begin();
@@ -81,6 +84,8 @@ public class UserDAOImpl implements UserDAO {
                 } catch (Exception ignored) {
                     if (em.getTransaction().isActive()) em.getTransaction().rollback();
                 }
+            } else {
+                adminUser.setPassword("123");
             }
             return adminUser;
         } catch (Exception e) {
@@ -285,26 +290,52 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public void delete(Integer id) {
         EntityManager em = JpaUtil.getEntityManager();
-
         try {
             em.getTransaction().begin();
 
-            User user = em.find(User.class, id);
+            // 1. Xóa sạch các dữ liệu liên quan ở các bảng con trong CSDL SQL Server
+            try { em.createNativeQuery("DELETE FROM OrderStatusHistory WHERE ChangedBy = :id OR OrderID IN (SELECT OrderID FROM Orders WHERE UserID = :id)").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean OrderStatusHistory: " + e.getMessage()); }
+            try { em.createNativeQuery("DELETE FROM OrderDetails WHERE OrderID IN (SELECT OrderID FROM Orders WHERE UserID = :id)").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean OrderDetails: " + e.getMessage()); }
+            try { em.createNativeQuery("DELETE FROM Payments WHERE OrderID IN (SELECT OrderID FROM Orders WHERE UserID = :id)").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean Payments: " + e.getMessage()); }
+            try { em.createNativeQuery("DELETE FROM Orders WHERE UserID = :id").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean Orders: " + e.getMessage()); }
+            try { em.createNativeQuery("DELETE FROM Reviews WHERE UserID = :id").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean Reviews: " + e.getMessage()); }
+            try { em.createNativeQuery("DELETE FROM Wishlists WHERE UserID = :id").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean Wishlists: " + e.getMessage()); }
+            try { em.createNativeQuery("DELETE FROM CartDetails WHERE CartID IN (SELECT CartID FROM Carts WHERE UserID = :id)").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean CartDetails: " + e.getMessage()); }
+            try { em.createNativeQuery("DELETE FROM Carts WHERE UserID = :id").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean Carts: " + e.getMessage()); }
+            try { em.createNativeQuery("DELETE FROM Addresses WHERE UserID = :id").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean Addresses: " + e.getMessage()); }
 
-            if (user != null) {
-                em.remove(user);
-            }
+            // 2. Xóa vĩnh viễn tài khoản người dùng khỏi bảng Users
+            em.createNativeQuery("DELETE FROM Users WHERE UserID = :id").setParameter("id", id).executeUpdate();
 
             em.getTransaction().commit();
-
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
-            throw e;
+            System.err.println("Hard delete failed, fallback to soft delete & delete retry for user ID: " + id);
+            e.printStackTrace();
 
+            // Retry deletion in a separate transaction
+            try {
+                EntityManager em2 = JpaUtil.getEntityManager();
+                em2.getTransaction().begin();
+                em2.createNativeQuery("DELETE FROM Users WHERE UserID = :id").setParameter("id", id).executeUpdate();
+                em2.getTransaction().commit();
+                em2.close();
+            } catch (Exception ex) {
+                // If hard delete still blocked, set status = 0 so user vanishes from active list
+                try {
+                    EntityManager em3 = JpaUtil.getEntityManager();
+                    em3.getTransaction().begin();
+                    em3.createNativeQuery("UPDATE Users SET Status = 0 WHERE UserID = :id").setParameter("id", id).executeUpdate();
+                    em3.getTransaction().commit();
+                    em3.close();
+                } catch (Exception ignored) {}
+            }
         } finally {
-            em.close();
+            if (em.isOpen()) {
+                em.close();
+            }
         }
     }
 

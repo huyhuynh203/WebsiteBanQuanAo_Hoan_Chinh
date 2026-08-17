@@ -9,44 +9,36 @@
         <c:choose>
             <c:when test="${not empty banners}">
                 <c:forEach var="banner" items="${banners}" varStatus="status">
-                    <div class="slide ${status.first ? 'active' : ''}">
+                    <div class="slide ${status.first ? 'active' : ''}" style="background-image: linear-gradient(90deg, #0b0f17 0%, rgba(11,15,23,0.85) 55%, rgba(11,15,23,0.4) 100%), url('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&auto=format&fit=crop');">
                         <div class="slide-content">
-                            <span class="slide-tag">ƯU ĐÃI ĐỘC QUYỀN</span>
+                            <div class="slide-tag-group">
+                                <span class="slide-tag-dot"></span>
+                                <span class="slide-tag">ƯU ĐÃI ĐỘC QUYỀN</span>
+                            </div>
                             <h2 class="slide-title">${banner.title}</h2>
-                            <a href="${pageContext.request.contextPath}/${banner.link}" class="btn-banner-pill">
-                                MUA NGAY <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+                            <p class="slide-subdesc" style="margin-bottom: 24px;">Khám phá bộ sưu tập thời trang cao cấp với ưu đãi giảm giá đến <span style="color: #e5b842; font-weight: 800;">50%</span></p>
+                            <a href="${pageContext.request.contextPath}/products" class="btn-banner-pill" style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #e5b842 0%, #c99726 100%); color: #0b0f19; font-weight: 900; font-size: 0.9rem; letter-spacing: 1.5px; padding: 12px 28px; border-radius: 50px; text-decoration: none; box-shadow: 0 6px 20px rgba(229, 184, 66, 0.4);">
+                                <span>MUA NGAY</span>
+                                <i class="fa-solid fa-arrow-right" style="margin-left: 4px;"></i>
                             </a>
-                        </div>
-                        <div class="slide-graphic">
-                            <svg width="340" height="340" viewBox="0 0 340 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="170" cy="170" r="150" stroke="#d4af37" stroke-width="1.5" stroke-dasharray="4 4"/>
-                                <circle cx="170" cy="170" r="120" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-                                <polygon points="170,50 66,230 274,230" stroke="rgba(255,255,255,0.18)" stroke-width="1" fill="none"/>
-                                <circle cx="318" cy="150" r="4" fill="#d4af37"/>
-                                <circle cx="90" cy="270" r="4" fill="#3b82f6"/>
-                            </svg>
                         </div>
                     </div>
                 </c:forEach>
             </c:when>
             <c:otherwise>
-                <!-- Fallback slide matching exact screenshot -->
-                <div class="slide active">
+                <!-- Fallback slide matching exact luxury design -->
+                <div class="slide active" style="background-image: linear-gradient(90deg, #0b0f17 0%, rgba(11,15,23,0.85) 55%, rgba(11,15,23,0.4) 100%), url('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&auto=format&fit=crop');">
                     <div class="slide-content">
-                        <span class="slide-tag">ƯU ĐÃI ĐỘC QUYỀN</span>
-                        <h2 class="slide-title">Bộ Sưu Tập Mùa Hè<br>2026</h2>
-                        <a href="${pageContext.request.contextPath}/products" class="btn-banner-pill">
-                            MUA NGAY <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+                        <div class="slide-tag-group">
+                            <span class="slide-tag-dot"></span>
+                            <span class="slide-tag">ƯU ĐÃI ĐỘC QUYỀN</span>
+                        </div>
+                        <h2 class="slide-title">Bộ Sưu Tập Mùa Hè<br><span style="color: #e5b842;">2026</span></h2>
+                        <p class="slide-subdesc" style="margin-bottom: 24px;">Khám phá bộ sưu tập thời trang cao cấp với ưu đãi giảm giá đến <span style="color: #e5b842; font-weight: 800;">50%</span></p>
+                        <a href="${pageContext.request.contextPath}/products" class="btn-banner-pill" style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #e5b842 0%, #c99726 100%); color: #0b0f19; font-weight: 900; font-size: 0.9rem; letter-spacing: 1.5px; padding: 12px 28px; border-radius: 50px; text-decoration: none; box-shadow: 0 6px 20px rgba(229, 184, 66, 0.4);">
+                            <span>MUA NGAY</span>
+                            <i class="fa-solid fa-arrow-right" style="margin-left: 4px;"></i>
                         </a>
-                    </div>
-                    <div class="slide-graphic">
-                        <svg width="340" height="340" viewBox="0 0 340 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="170" cy="170" r="150" stroke="#d4af37" stroke-width="1.5" stroke-dasharray="4 4"/>
-                            <circle cx="170" cy="170" r="120" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-                            <polygon points="170,50 66,230 274,230" stroke="rgba(255,255,255,0.18)" stroke-width="1" fill="none"/>
-                            <circle cx="318" cy="150" r="4" fill="#d4af37"/>
-                            <circle cx="90" cy="270" r="4" fill="#3b82f6"/>
-                        </svg>
                     </div>
                 </div>
             </c:otherwise>

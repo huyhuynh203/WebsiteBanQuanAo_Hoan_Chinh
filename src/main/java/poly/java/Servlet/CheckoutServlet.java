@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
-@WebServlet({"/checkout", "/checkout/submit", "/checkout/payment", "/checkout/payment/status", "/checkout/payment/payos", "/checkout/payment/payos-return", "/checkout/payment/payos-cancel", "/checkout/payment/confirm", "/checkout/payment/bank-simulator", "/checkout/payment/bank-simulator/trigger"})
+@WebServlet({"/checkout", "/checkout/submit", "/checkout/payment", "/checkout/payment/status", "/checkout/payment/payos", "/checkout/payment/payos-return", "/checkout/payment/payos-cancel", "/checkout/payment/confirm"})
 public class CheckoutServlet extends HttpServlet {
 
     private final OrderDAO orderDAO = new OrderDAOImpl();
@@ -51,12 +51,7 @@ public class CheckoutServlet extends HttpServlet {
             return;
         }
 
-        if ("/checkout/payment/bank-simulator".equals(path)) {
-            List<Order> unpaidOrders = orderDAO.findUnpaidOrders();
-            req.setAttribute("unpaidOrders", unpaidOrders);
-            req.getRequestDispatcher("/bank-simulator.jsp").forward(req, resp);
-            return;
-        }
+
 
         User user = (User) req.getSession().getAttribute("currentUser");
         if (user == null) {
@@ -237,43 +232,7 @@ public class CheckoutServlet extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
         String path = req.getServletPath();
 
-        if ("/checkout/payment/bank-simulator/trigger".equals(path)) {
-            String orderIdStr = req.getParameter("orderId");
-            if (orderIdStr != null) {
-                try {
-                    int orderId = Integer.parseInt(orderIdStr);
-                    Order order = orderDAO.findById(orderId);
-                    if (order != null) {
-                        order.setPaymentStatus("PAID");
-                        order.setOrderStatus("CONFIRMED");
-                        orderDAO.update(order);
 
-                        Payment payment = new Payment();
-                        payment.setOrderID(order);
-                        payment.setTransactionCode("BANK-SIM-" + System.currentTimeMillis());
-                        payment.setPaymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod() : "ONLINE");
-                        payment.setAmount(order.getFinalAmount() != null ? order.getFinalAmount() : BigDecimal.ZERO);
-                        payment.setStatus("PAID");
-                        payment.setPaymentDate(Instant.now());
-                        paymentDAO.create(payment);
-
-                        OrderStatusHistory history = new OrderStatusHistory();
-                        history.setOrderID(order);
-                        history.setStatus("PAID & CONFIRMED");
-                        history.setChangedAt(Instant.now());
-                        history.setChangedBy(order.getUserID());
-                        historyDAO.create(history);
-
-                        resp.sendRedirect(req.getContextPath() + "/checkout/payment/bank-simulator?success=1");
-                        return;
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            resp.sendRedirect(req.getContextPath() + "/checkout/payment/bank-simulator?error=1");
-            return;
-        }
 
         if ("/checkout/submit".equals(path)) {
             User user = (User) req.getSession().getAttribute("currentUser");

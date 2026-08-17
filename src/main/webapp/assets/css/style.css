@@ -2,7 +2,7 @@
    E-Clothing Store: Luxury & Modern UI Design System
    Color Palette: Midnight Obsidian (#09090b) & Champagne Gold (#d4af37)
    ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
     /* Color Tokens */
@@ -61,7 +61,7 @@
 }
 
 body {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Be Vietnam Pro', 'Outfit', system-ui, -apple-system, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.6;
@@ -215,14 +215,14 @@ header {
    3. Banners & Slider Section
    ========================================================================== */
 .hero-slider {
-    margin: 24px 0 60px 0;
+    margin: 28px 0 60px 0;
     position: relative;
-    height: 420px;
-    border-radius: 20px;
+    height: 460px;
+    border-radius: 24px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-    background: linear-gradient(135deg, #0f141d 0%, #0a0d14 100%);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(229, 184, 66, 0.1);
+    background: #0b0f17;
 }
 
 .slide {
@@ -232,14 +232,14 @@ header {
     width: 100%;
     height: 100%;
     background-size: cover;
-    background-position: center;
+    background-position: center right;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 80px;
+    padding: 0 70px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.8s ease-in-out;
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .slide.active {
@@ -249,72 +249,162 @@ header {
 
 .slide-content {
     position: relative;
-    z-index: 3;
-    max-width: 580px;
+    z-index: 5;
+    max-width: 620px;
     animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slide-tag-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.slide-tag-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #e5b842;
+    box-shadow: 0 0 12px #e5b842;
 }
 
 .slide-tag {
     color: #e5b842;
     text-transform: uppercase;
     font-weight: 800;
-    letter-spacing: 3px;
+    letter-spacing: 3.5px;
     font-size: 0.85rem;
-    margin-bottom: 24px;
     display: inline-block;
     border-bottom: 2px solid #e5b842;
-    padding-bottom: 4px;
+    padding-bottom: 3px;
 }
 
 .slide-title {
-    font-size: 3.5rem;
+    font-size: 3.8rem;
     font-weight: 900;
-    line-height: 1.15;
-    margin-bottom: 32px;
+    line-height: 1.12;
+    margin-bottom: 18px;
     color: #ffffff;
     letter-spacing: -0.5px;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
 }
 
-.btn-banner-pill {
+.slide-subdesc {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.05rem;
+    font-weight: 400;
+    margin-bottom: 34px;
+    letter-spacing: 0.3px;
+}
+
+/* Luxury Button */
+.btn-banner-luxury {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    background: #e5b842;
+    gap: 14px;
+    background: linear-gradient(135deg, #e5b842 0%, #c99726 100%);
     color: #0b0f19;
-    font-weight: 800;
-    font-size: 0.85rem;
-    letter-spacing: 1.5px;
+    font-weight: 900;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
     padding: 14px 32px;
-    border-radius: 12px;
+    border-radius: 50px;
     text-decoration: none;
-    box-shadow: 0 4px 20px rgba(229, 184, 66, 0.35);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 8px 30px rgba(229, 184, 66, 0.4);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.btn-banner-pill:hover {
-    background: #f0c44d;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(229, 184, 66, 0.5);
+.btn-banner-luxury .btn-icon-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #0b0f19;
+    color: #e5b842;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: transform 0.35s ease, background 0.35s ease;
+}
+
+.btn-banner-luxury:hover {
+    background: linear-gradient(135deg, #f0c44d 0%, #e5b842 100%);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 14px 40px rgba(229, 184, 66, 0.6);
     color: #000000;
 }
 
-.slide-graphic {
-    position: absolute;
-    right: 70px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
-    opacity: 0.45;
-    pointer-events: none;
-    transition: opacity 0.5s ease;
+.btn-banner-luxury:hover .btn-icon-circle {
+    transform: translateX(4px);
+    background: #000000;
+    color: #f0c44d;
 }
 
-.hero-slider:hover .slide-graphic {
-    opacity: 0.75;
+/* Graphic Orbit & Badge */
+.slide-graphic {
+    position: absolute;
+    right: 80px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    pointer-events: none;
 }
-    line-height: 1.15;
-    margin-bottom: 28px;
-    color: var(--text-primary);
+
+.luxury-orbit {
+    position: relative;
+    width: 380px;
+    height: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.orbit-svg {
+    animation: spinOrbit 40s linear infinite;
+    filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.2));
+}
+
+@keyframes spinOrbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.luxury-badge-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(13, 18, 28, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 50%;
+    width: 140px;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(212, 175, 55, 0.15);
+}
+
+.badge-year {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #e5b842;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+
+.badge-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
+    opacity: 0.85;
 }
 
 /* ==========================================================================

@@ -18,6 +18,8 @@ import poly.java.Entity.Product;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @WebServlet({"/admin/products", "/admin/products/add", "/admin/products/edit", "/admin/product/create", "/admin/product/edit", "/admin/product/delete"})
 @MultipartConfig(
@@ -29,6 +31,7 @@ public class AdminProductServlet extends HttpServlet {
 
     private final ProductDAO productDAO = new ProductDAOImpl();
     private final CategoryDAO categoryDAO = new CategoryDAOImpl();
+    private final poly.java.DAO.BrandDAO brandDAO = new poly.java.DAO.Impl.BrandDAOImpl();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -54,8 +57,31 @@ public class AdminProductServlet extends HttpServlet {
             }
         }
 
+        String keyword = req.getParameter("keyword");
+        String categoryIdStr = req.getParameter("categoryId");
+        String statusStr = req.getParameter("status");
+
+        Integer categoryId = null;
+        if (categoryIdStr != null && !categoryIdStr.isBlank()) {
+            try {
+                categoryId = Integer.parseInt(categoryIdStr);
+            } catch (NumberFormatException ignored) {}
+        }
+
+        Boolean status = null;
+        if (statusStr != null && !statusStr.isBlank()) {
+            status = Boolean.parseBoolean(statusStr);
+        }
+
+        List<Product> products;
+        if ((keyword != null && !keyword.isBlank()) || categoryId != null || status != null) {
+            products = productDAO.searchProducts(keyword, categoryId, status, 1, 100);
+        } else {
+            products = productDAO.findAll();
+        }
+
         req.setAttribute("categories", categoryDAO.findAll());
-        req.setAttribute("products", productDAO.findAll());
+        req.setAttribute("products", products);
         req.getRequestDispatcher("/admin/products.jsp").forward(req, resp);
     }
 
@@ -74,34 +100,71 @@ public class AdminProductServlet extends HttpServlet {
         String discountStr = req.getParameter("discountPrice");
         String description = req.getParameter("description");
         String imageUrlParam = req.getParameter("imageUrl");
+        if (imageUrlParam == null || imageUrlParam.isBlank()) {
+            imageUrlParam = req.getParameter("extraImageUrls");
+        }
 
-        String thumbnail = imageUrlParam;
+        List<String> allImageUrls = new ArrayList<>();
 
-        // Xử lý upload file ảnh từ máy tính
+        // 1. Phân tách danh sách URL nhập vào
+        if (imageUrlParam != null && !imageUrlParam.isBlank()) {
+            String[] urls = imageUrlParam.split("[\n,]+");
+            for (String url : urls) {
+                url = url.trim();
+                if (!url.isEmpty()) {
+                    allImageUrls.add(url);
+                }
+            }
+        }
+
+        // 2. Tải lên file ảnh từ máy tính (hỗ trợ chọn cùng lúc 1 hoặc nhiều file)
         try {
-            Part filePart = req.getPart("imageFile");
-            if (filePart != null && filePart.getSize() > 0) {
-                String fileName = extractFileName(filePart);
-                if (fileName != null && !fileName.isBlank()) {
-                    String uploadPath = req.getServletContext().getRealPath("") + File.separator + "uploads" + File.separator + "products";
-                    File uploadDir = new File(uploadPath);
-                    if (!uploadDir.exists()) {
-                        uploadDir.mkdirs();
+            for (Part part : req.getParts()) {
+                if (("imageFile".equals(part.getName()) || "extraImageFiles".equals(part.getName())) && part.getSize() > 0) {
+                    String fileName = extractFileName(part);
+                    if (fileName != null && !fileName.isBlank()) {
+                        String uploadPath = req.getServletContext().getRealPath("") + File.separator + "uploads" + File.separator + "products";
+                        File uploadDir = new File(uploadPath);
+                        if (!uploadDir.exists()) {
+                            uploadDir.mkdirs();
+                        }
+                        String newFileName = System.currentTimeMillis() + "_" + fileName;
+                        String filePath = uploadPath + File.separator + newFileName;
+                        part.write(filePath);
+                        allImageUrls.add("uploads/products/" + newFileName);
                     }
-                    String newFileName = System.currentTimeMillis() + "_" + fileName;
-                    String filePath = uploadPath + File.separator + newFileName;
-                    filePart.write(filePath);
-                    thumbnail = "uploads/products/" + newFileName;
                 }
             }
         } catch (Exception e) {
             System.err.println("Upload image error: " + e.getMessage());
         }
 
+        String brandName = req.getParameter("brandName");
+        if (brandName == null || brandName.isBlank()) {
+            brandName = req.getParameter("brandId");
+        }
+
         int categoryId = categoryIdStr != null && !categoryIdStr.isBlank() ? Integer.parseInt(categoryIdStr) : 1;
-        int brandId = brandIdStr != null && !brandIdStr.isBlank() ? Integer.parseInt(brandIdStr) : 1;
         BigDecimal price = priceStr != null && !priceStr.isBlank() ? new BigDecimal(priceStr) : BigDecimal.ZERO;
         BigDecimal discountPrice = (discountStr != null && !discountStr.isBlank()) ? new BigDecimal(discountStr) : null;
+
+        Brand brand = null;
+        if (brandName != null && !brandName.isBlank()) {
+            try {
+                int bId = Integer.parseInt(brandName);
+                brand = brandDAO.findById(bId);
+            } catch (NumberFormatException e) {
+                brand = brandDAO.findByName(brandName.trim());
+                if (brand == null) {
+                    Brand newBrand = new Brand();
+                    newBrand.setBrandName(brandName.trim());
+                    brand = brandDAO.create(newBrand);
+                }
+            }
+        }
+        if (brand == null) {
+            brand = brandDAO.findById(1);
+        }
 
         Product product = new Product();
         if (idStr != null && !idStr.isBlank()) {
@@ -117,34 +180,131 @@ public class AdminProductServlet extends HttpServlet {
         category.setId(categoryId);
         product.setCategoryID(category);
 
-        Brand brand = new Brand();
-        brand.setId(brandId);
         product.setBrandID(brand);
 
         product.setPrice(price);
         product.setDiscountPrice(discountPrice);
-        if (thumbnail != null && !thumbnail.isBlank()) {
-            product.setThumbnail(thumbnail);
+        if (!allImageUrls.isEmpty()) {
+            product.setThumbnail(allImageUrls.get(0));
         }
         product.setDescription(description);
         product.setStatus(true);
 
+        String customColors = req.getParameter("customColors");
+        String customSizes = req.getParameter("customSizes");
+
         if (product.getId() != null) {
             productDAO.update(product);
+            try {
+                createVariantsFromInputs(product, customColors, customSizes);
+                saveExtraImages(product, allImageUrls);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         } else {
             product.setSoldQuantity(0);
             product.setViewCount(0);
             Product created = productDAO.create(product);
             
-            // Tự động tạo các biến thể mặc định (Màu sắc, kích cỡ, tồn kho 50 cái) cho sản phẩm mới
             try {
-                createDefaultVariants(created);
+                createVariantsFromInputs(created, customColors, customSizes);
+                saveExtraImages(created, allImageUrls);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
         resp.sendRedirect(req.getContextPath() + "/admin/products");
+    }
+
+    private void saveExtraImages(Product product, List<String> allImageUrls) {
+        if (product == null || product.getId() == null || allImageUrls == null || allImageUrls.isEmpty()) return;
+        poly.java.DAO.ProductImageDAO imgDAO = new poly.java.DAO.Impl.ProductImageDAOImpl();
+
+        for (int i = 0; i < allImageUrls.size(); i++) {
+            String url = allImageUrls.get(i);
+            poly.java.Entity.ProductImage pi = new poly.java.Entity.ProductImage();
+            pi.setProductID(product);
+            pi.setImageURL(url);
+            pi.setIsMain(i == 0);
+            try {
+                imgDAO.create(pi);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private void createVariantsFromInputs(Product product, String customColors, String customSizes) {
+        if (product == null || product.getId() == null) return;
+        if (customColors == null || customColors.isBlank() || customSizes == null || customSizes.isBlank()) {
+            createDefaultVariants(product);
+            return;
+        }
+
+        String[] colors = customColors.split(",");
+        String[] sizes = customSizes.split(",");
+
+        poly.java.DAO.ColorDAO colorDAO = new poly.java.DAO.Impl.ColorDAOImpl();
+        poly.java.DAO.SizeDAO sizeDAO = new poly.java.DAO.Impl.SizeDAOImpl();
+        poly.java.DAO.ProductVariantDAO variantDAO = new poly.java.DAO.Impl.ProductVariantDAOImpl();
+
+        List<poly.java.Entity.Color> allColors = colorDAO.findAll();
+        List<poly.java.Entity.Size> allSizes = sizeDAO.findAll();
+
+        for (String cName : colors) {
+            cName = cName.trim();
+            if (cName.isEmpty()) continue;
+
+            poly.java.Entity.Color colorEntity = null;
+            for (poly.java.Entity.Color c : allColors) {
+                if (c.getColorName() != null && c.getColorName().equalsIgnoreCase(cName)) {
+                    colorEntity = c;
+                    break;
+                }
+            }
+            if (colorEntity == null) {
+                colorEntity = new poly.java.Entity.Color();
+                colorEntity.setColorName(cName);
+                colorEntity = colorDAO.create(colorEntity);
+                allColors.add(colorEntity);
+            }
+
+            for (String sName : sizes) {
+                sName = sName.trim();
+                if (sName.isEmpty()) continue;
+
+                poly.java.Entity.Size sizeEntity = null;
+                for (poly.java.Entity.Size s : allSizes) {
+                    if (s.getSizeName() != null && s.getSizeName().equalsIgnoreCase(sName)) {
+                        sizeEntity = s;
+                        break;
+                    }
+                }
+                if (sizeEntity == null) {
+                    sizeEntity = new poly.java.Entity.Size();
+                    sizeEntity.setSizeName(sName);
+                    sizeEntity = sizeDAO.create(sizeEntity);
+                    allSizes.add(sizeEntity);
+                }
+
+                try {
+                    poly.java.Entity.ProductVariant existing = variantDAO.findByProductColorSize(product.getId(), cName, sName);
+                    if (existing == null) {
+                        poly.java.Entity.ProductVariant pv = new poly.java.Entity.ProductVariant();
+                        pv.setProductID(product);
+                        pv.setColorID(colorEntity);
+                        pv.setSizeID(sizeEntity);
+                        pv.setSku("SKU-" + product.getId() + "-C" + colorEntity.getId() + "S" + sizeEntity.getId());
+                        pv.setPrice(product.getDiscountPrice() != null && product.getDiscountPrice().compareTo(BigDecimal.ZERO) > 0 ? product.getDiscountPrice() : product.getPrice());
+                        pv.setQuantity(50);
+                        variantDAO.create(pv);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
     }
 
     private void createDefaultVariants(Product product) {

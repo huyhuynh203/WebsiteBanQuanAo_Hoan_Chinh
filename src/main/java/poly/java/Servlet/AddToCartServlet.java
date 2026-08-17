@@ -109,7 +109,12 @@ public class AddToCartServlet extends HttpServlet {
                     cd.setQuantity(quantity);
                     cartDetailDAO.create(cd);
                 }
-                resp.sendRedirect(req.getContextPath() + "/cart");
+                String action = req.getParameter("action");
+                if ("buy_now".equals(action)) {
+                    resp.sendRedirect(req.getContextPath() + "/checkout");
+                } else {
+                    resp.sendRedirect(req.getContextPath() + "/cart");
+                }
                 return;
             } catch (Exception e) {
                 e.printStackTrace();

@@ -1,5 +1,6 @@
 package poly.java.Servlet;
 
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -7,18 +8,82 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import poly.java.DAO.UserDAO;
 import poly.java.DAO.Impl.UserDAOImpl;
+import poly.java.Entity.Role;
 import poly.java.Entity.User;
+import poly.java.Utils.JpaUtil;
 
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet({"/admin/users"})
+@WebServlet({"/admin/users", "/admin/user/change-role", "/admin/user/delete"})
 public class UserManagementServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAOImpl();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String uri = req.getRequestURI();
+        String action = req.getParameter("action");
+
+        // 1. Phân lại quyền người dùng (CUSTOMER <-> ADMIN)
+        if (uri.contains("/admin/user/change-role") || "change-role".equalsIgnoreCase(action)) {
+            String idStr = req.getParameter("id");
+            String targetRole = req.getParameter("role");
+            if (idStr != null && !idStr.isBlank()) {
+                try {
+                    int userId = Integer.parseInt(idStr);
+                    User user = userDAO.findById(userId);
+                    if (user != null) {
+                        EntityManager em = JpaUtil.getEntityManager();
+                        try {
+                            String rName = (targetRole != null && targetRole.equalsIgnoreCase("ADMIN")) ? "ADMIN" : "CUSTOMER";
+                            Role role = null;
+                            try {
+                                role = em.createQuery("SELECT r FROM Role r WHERE UPPER(r.roleName) = :rName", Role.class)
+                                        .setParameter("rName", rName.toUpperCase())
+                                        .getSingleResult();
+                            } catch (Exception ignored) {}
+
+                            if (role == null) {
+                                role = new Role();
+                                role.setRoleName(rName);
+                                em.getTransaction().begin();
+                                em.persist(role);
+                                em.getTransaction().commit();
+                            }
+
+                            user.setRoleID(role);
+                            userDAO.update(user);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        } finally {
+                            em.close();
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            resp.sendRedirect(req.getContextPath() + "/admin/users");
+            return;
+        }
+
+        // 2. Xóa người dùng khỏi hệ thống
+        if (uri.contains("/admin/user/delete") || "delete".equalsIgnoreCase(action)) {
+            String idStr = req.getParameter("id");
+            if (idStr != null && !idStr.isBlank()) {
+                try {
+                    int userId = Integer.parseInt(idStr);
+                    userDAO.delete(userId);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            resp.sendRedirect(req.getContextPath() + "/admin/users");
+            return;
+        }
+
+        // 3. Hiển thị danh sách người dùng & Tìm kiếm phân trang
         String keyword = req.getParameter("keyword");
         String email = req.getParameter("email");
         String statusStr = req.getParameter("status");
@@ -30,7 +95,7 @@ public class UserManagementServlet extends HttpServlet {
         }
 
         int page = 1;
-        int pageSize = 10; // Mỗi trang 10 sản phẩm/nhân viên theo yêu cầu đề bài Lab 5
+        int pageSize = 10;
 
         if (pageStr != null && !pageStr.isBlank()) {
             try {

@@ -67,9 +67,14 @@
             </div>
         </header>
 
-        <c:if test="${param.success == 'cancel_order'}">
+        <c:if test="${param.success == 'status_updated'}">
             <div style="background-color: #065f46; color: #34d399; padding: 14px; border-radius: var(--radius-sm); margin-bottom: 20px; border: 1px solid #059669;">
-                <i class="fa-solid fa-circle-check"></i> Đã hủy đơn hàng thành công và cập nhật trạng thái đơn thành CANCELLED!
+                <i class="fa-solid fa-circle-check"></i> Đã cập nhật tình trạng đơn hàng thành công!
+            </div>
+        </c:if>
+        <c:if test="${param.success == 'cancel_order'}">
+            <div style="background-color: #7f1d1d; color: #fca5a5; padding: 14px; border-radius: var(--radius-sm); margin-bottom: 20px; border: 1px solid #dc2626;">
+                <i class="fa-solid fa-circle-check"></i> Đã hủy đơn hàng thành công!
             </div>
         </c:if>
 
@@ -79,7 +84,7 @@
                 <thead>
                     <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
                         <th style="padding: 12px;">Mã Đơn (#)</th>
-                        <th style="padding: 12px;">Khách Hàng / Nhân Viên</th>
+                        <th style="padding: 12px;">Khách Hàng</th>
                         <th style="padding: 12px;">Ngày Tạo</th>
                         <th style="padding: 12px;">Tổng Tiền</th>
                         <th style="padding: 12px;">Phương Thức</th>
@@ -105,29 +110,40 @@
                                     </td>
                                     <td style="padding: 14px;">
                                         <c:choose>
-                                            <c:when test="${o.orderStatus == 'CONFIRMED' || o.orderStatus == 'PAID' || o.orderStatus == 'DELIVERED'}">
-                                                <span style="color: #10b981; font-weight: 600;">● ${o.orderStatus}</span>
+                                            <c:when test="${o.orderStatus == 'DELIVERED' || o.orderStatus == 'COMPLETED'}">
+                                                <span style="color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 0.85rem; display: inline-block;">● Đã giao / Hoàn thành</span>
+                                            </c:when>
+                                            <c:when test="${o.orderStatus == 'CONFIRMED' || o.orderStatus == 'PAID'}">
+                                                <span style="color: #3b82f6; background: rgba(59, 130, 246, 0.15); padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 0.85rem; display: inline-block;">● Đã xác nhận</span>
+                                            </c:when>
+                                            <c:when test="${o.orderStatus == 'SHIPPING'}">
+                                                <span style="color: #8b5cf6; background: rgba(139, 92, 246, 0.15); padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 0.85rem; display: inline-block;">● Đang giao hàng</span>
                                             </c:when>
                                             <c:when test="${o.orderStatus == 'CANCELLED'}">
-                                                <span style="color: #ef4444; font-weight: 600;">● Đã hủy (CANCELLED)</span>
+                                                <span style="color: #ef4444; background: rgba(239, 68, 68, 0.15); padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 0.85rem; display: inline-block;">● Đã hủy</span>
                                             </c:when>
                                             <c:otherwise>
-                                                <span style="color: #f59e0b; font-weight: 600;">● ${o.orderStatus}</span>
+                                                <span style="color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 0.85rem; display: inline-block;">● Chờ xử lý</span>
                                             </c:otherwise>
                                         </c:choose>
                                     </td>
-                                    <td style="padding: 14px; text-align: center; display: flex; gap: 8px; justify-content: center;">
-                                        <!-- Xem chi tiết đơn hàng -->
-                                        <a href="${pageContext.request.contextPath}/admin/orders/detail?id=${o.id}" class="btn" style="background-color: #3b82f6; color: #fff; padding: 6px 12px; font-size: 0.85rem; text-decoration: none; border-radius: 4px;">
+                                    <td style="padding: 14px; text-align: center; display: flex; gap: 8px; justify-content: center; align-items: center;">
+                                        <!-- Nút Xem Chi Tiết Hóa Đơn -->
+                                        <a href="${pageContext.request.contextPath}/admin/orders/detail?id=${o.id}" 
+                                           class="btn" 
+                                           style="background-color: #3b82f6; color: #fff; padding: 6px 12px; font-size: 0.85rem; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
                                             <i class="fa-solid fa-eye"></i> Chi Tiết
                                         </a>
 
-                                        <!-- Hủy đơn hàng -->
-                                        <c:if test="${o.orderStatus != 'CANCELLED'}">
-                                            <a href="${pageContext.request.contextPath}/admin/orders/cancel?id=${o.id}" class="btn" style="background-color: #ef4444; color: #fff; padding: 6px 12px; font-size: 0.85rem; text-decoration: none; border-radius: 4px;" onclick="return confirm('Bạn có chắc chắn muốn hủy hóa đơn #${o.id}?');">
-                                                <i class="fa-solid fa-ban"></i> Hủy
-                                            </a>
-                                        </c:if>
+                                        <!-- Thẻ Sổ Chọn Cập Nhật Trạng Thái Đơn Hàng -->
+                                        <select onchange="updateOrderStatus(${o.id}, this.value)" 
+                                                style="background: #181f2a; color: ${o.orderStatus == 'CANCELLED' ? '#ef4444' : (o.orderStatus == 'DELIVERED' || o.orderStatus == 'COMPLETED' ? '#10b981' : (o.orderStatus == 'CONFIRMED' ? '#3b82f6' : (o.orderStatus == 'SHIPPING' ? '#8b5cf6' : '#f59e0b')))}; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; outline: none;">
+                                            <option value="PENDING" ${o.orderStatus == 'PENDING' ? 'selected' : ''} style="background-color: #181f2a; color: #f59e0b;">⏳ Chờ xử lý (PENDING)</option>
+                                            <option value="CONFIRMED" ${o.orderStatus == 'CONFIRMED' ? 'selected' : ''} style="background-color: #181f2a; color: #3b82f6;">✅ Đã xác nhận (CONFIRMED)</option>
+                                            <option value="SHIPPING" ${o.orderStatus == 'SHIPPING' ? 'selected' : ''} style="background-color: #181f2a; color: #8b5cf6;">🚚 Đang giao hàng (SHIPPING)</option>
+                                            <option value="DELIVERED" ${o.orderStatus == 'DELIVERED' || o.orderStatus == 'COMPLETED' ? 'selected' : ''} style="background-color: #181f2a; color: #10b981;">🎉 Đã giao / Hoàn thành (DELIVERED)</option>
+                                            <option value="CANCELLED" ${o.orderStatus == 'CANCELLED' ? 'selected' : ''} style="background-color: #181f2a; color: #ef4444;">❌ Hủy đơn hàng (CANCELLED)</option>
+                                        </select>
                                     </td>
                                 </tr>
                             </c:forEach>
@@ -142,5 +158,15 @@
             </table>
         </div>
     </main>
+
+    <script>
+        function updateOrderStatus(orderId, newStatus) {
+            if (confirm('Bạn có chắc chắn muốn chuyển trạng thái hóa đơn #' + orderId + ' thành ' + newStatus + '?')) {
+                window.location.href = '${pageContext.request.contextPath}/admin/orders?action=status&orderId=' + orderId + '&status=' + newStatus;
+            } else {
+                location.reload();
+            }
+        }
+    </script>
 </body>
 </html>

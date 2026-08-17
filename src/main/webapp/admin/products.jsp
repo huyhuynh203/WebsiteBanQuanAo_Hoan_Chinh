@@ -1,6 +1,6 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -152,7 +152,16 @@
                                         </c:choose>
                                     </td>
                                     <td style="padding: 12px; text-align: center; display: flex; gap: 8px; justify-content: center;">
-                                        <button class="btn" style="background-color: #3b82f6; color: #fff; padding: 6px 12px; font-size: 0.85rem; border-radius: 4px;" onclick="openEditModal(${p.id}, '${p.productName}', ${p.categoryID.id}, ${p.brandID != null ? p.brandID.id : 1}, ${p.price}, ${p.discountPrice != null ? p.discountPrice : 0}, '${p.thumbnail}', '${p.description}')">
+                                        <button type="button" class="btn" style="background-color: #3b82f6; color: #fff; padding: 6px 12px; font-size: 0.85rem; border-radius: 4px;"
+                                                data-id="${p.id}"
+                                                data-name="<c:out value='${p.productName}'/>"
+                                                data-catid="${p.categoryID.id}"
+                                                data-brand="<c:out value='${p.brandID != null ? p.brandID.brandName : ""}'/>"
+                                                data-price="${p.price}"
+                                                data-discount="${p.discountPrice != null ? p.discountPrice : ''}"
+                                                data-img="<c:out value='${p.thumbnail}'/>"
+                                                data-desc="<c:out value='${p.description}'/>"
+                                                onclick="openEditModalFromBtn(this)">
                                             <i class="fa-solid fa-pen-to-square"></i> Sửa
                                         </button>
                                         <a href="${pageContext.request.contextPath}/admin/product/delete?id=${p.id}" class="btn" style="background-color: #ef4444; color: #fff; padding: 6px 12px; font-size: 0.85rem; text-decoration: none; border-radius: 4px;" onclick="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">
@@ -189,20 +198,26 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
                     <div>
                         <label class="form-label">Danh Mục</label>
-                        <select name="categoryId" id="prodCat" class="form-control">
+                        <select name="categoryId" id="prodCat" class="form-control" style="background-color: #181f2a; color: #ffffff; border: 1px solid var(--border-color); padding: 10px;">
                             <c:forEach var="c" items="${categories}">
-                                <option value="${c.id}">${c.categoryName}</option>
+                                <option value="${c.id}" style="background-color: #181f2a; color: #ffffff; padding: 10px;">${c.categoryName}</option>
                             </c:forEach>
                         </select>
                     </div>
                     <div>
                         <label class="form-label">Thương Hiệu</label>
-                        <select name="brandId" id="prodBrand" class="form-control">
-                            <option value="1">Nike</option>
-                            <option value="2">Adidas</option>
-                            <option value="3">Zara</option>
-                            <option value="4">Uniqlo</option>
-                        </select>
+                        <input type="text" name="brandName" id="prodBrand" list="brandList" class="form-control" placeholder="Nhập tên thương hiệu..." style="background-color: #181f2a; color: #ffffff; border: 1px solid var(--border-color);">
+                        <datalist id="brandList">
+                            <c:forEach var="b" items="${applicationScope.brands}">
+                                <option value="${b.brandName}"></option>
+                            </c:forEach>
+                            <option value="Nike"></option>
+                            <option value="Adidas"></option>
+                            <option value="Puma"></option>
+                            <option value="Uniqlo"></option>
+                            <option value="Zara"></option>
+                            <option value="Gucci"></option>
+                        </datalist>
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
@@ -215,13 +230,23 @@
                         <input type="number" step="any" name="discountPrice" id="prodDiscount" class="form-control">
                     </div>
                 </div>
-                <div class="form-group" style="margin-bottom: 14px;">
-                    <label class="form-label">Link Ảnh Thumbnail (hoặc chọn file bên dưới)</label>
-                    <input type="text" name="imageUrl" id="prodImg" class="form-control" placeholder="assets/images/...">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                    <div>
+                        <label class="form-label">Tùy Chọn Màu Sắc</label>
+                        <input type="text" name="customColors" id="prodColors" class="form-control" placeholder="Trắng, Đen, Đỏ, Xanh..." value="Trắng, Đen" style="background-color: #181f2a; color: #ffffff; border: 1px solid var(--border-color);">
+                    </div>
+                    <div>
+                        <label class="form-label">Tùy Chọn Size</label>
+                        <input type="text" name="customSizes" id="prodSizes" class="form-control" placeholder="S, M, L, XL, 2XL, 3XL... hoặc 38, 39, 40" value="M, L, XL, 2XL, 3XL" style="background-color: #181f2a; color: #ffffff; border: 1px solid var(--border-color);">
+                    </div>
                 </div>
-                <div class="form-group" style="margin-bottom: 14px;">
-                    <label class="form-label">Tải Ảnh Từ Máy Tính</label>
-                    <input type="file" name="imageFile" class="form-control" accept="image/*">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label">Link Hình Ảnh</label>
+                    <textarea name="imageUrl" id="prodImg" class="form-control" rows="2" placeholder="https://link-anh-1.jpg&#10;https://link-anh-2.jpg" style="background-color: #181f2a; color: #ffffff; border: 1px solid var(--border-color);"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label">Tải File Ảnh Từ Máy Tính</label>
+                    <input type="file" name="imageFile" class="form-control" accept="image/*" multiple style="background-color: #181f2a; color: #ffffff; border: 1px solid var(--border-color);">
                 </div>
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label class="form-label">Mô Tả Sản Phẩm</label>
@@ -247,13 +272,35 @@
             document.getElementById('productModal').style.display = 'flex';
         }
 
+        function openEditModalFromBtn(btn) {
+            var id = btn.getAttribute('data-id');
+            var name = btn.getAttribute('data-name');
+            var catId = btn.getAttribute('data-catid');
+            var brand = btn.getAttribute('data-brand');
+            var price = btn.getAttribute('data-price');
+            var discount = btn.getAttribute('data-discount');
+            var img = btn.getAttribute('data-img');
+            var desc = btn.getAttribute('data-desc');
+
+            document.getElementById('modalTitle').innerText = 'Cập Nhật Sản Phẩm #' + id;
+            document.getElementById('prodId').value = id;
+            document.getElementById('prodName').value = name || '';
+            document.getElementById('prodCat').value = catId || '1';
+            document.getElementById('prodBrand').value = brand || '';
+            document.getElementById('prodPrice').value = price || '';
+            document.getElementById('prodDiscount').value = (discount && parseFloat(discount) > 0) ? discount : '';
+            document.getElementById('prodImg').value = img || '';
+            document.getElementById('prodDesc').value = desc || '';
+            document.getElementById('productModal').style.display = 'flex';
+        }
+
         function openEditModal(id, name, catId, brandId, price, discount, img, desc) {
             document.getElementById('modalTitle').innerText = 'Cập Nhật Sản Phẩm #' + id;
             document.getElementById('prodId').value = id;
-            document.getElementById('prodName').value = name;
-            document.getElementById('prodCat').value = catId;
-            document.getElementById('prodBrand').value = brandId;
-            document.getElementById('prodPrice').value = price;
+            document.getElementById('prodName').value = name || '';
+            document.getElementById('prodCat').value = catId || '1';
+            document.getElementById('prodBrand').value = brandId || '';
+            document.getElementById('prodPrice').value = price || '';
             document.getElementById('prodDiscount').value = (discount > 0) ? discount : '';
             document.getElementById('prodImg').value = img || '';
             document.getElementById('prodDesc').value = desc || '';
