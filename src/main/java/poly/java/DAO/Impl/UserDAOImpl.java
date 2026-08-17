@@ -174,7 +174,6 @@ public class UserDAOImpl implements UserDAO {
         }
     }
 
-    // Bài 2: Tìm kiếm kết hợp phân trang nhân viên (người dùng) - 10 nhân viên / trang
     @Override
     public List<User> searchUsers(String keyword, String email, Boolean status, int page, int pageSize) {
         EntityManager em = JpaUtil.getEntityManager();
@@ -241,10 +240,6 @@ public class UserDAOImpl implements UserDAO {
         }
     }
 
-    // ==========================
-    // CRUD từ GenericDAO
-    // ==========================
-
     @Override
     public User create(User entity) {
         EntityManager em = JpaUtil.getEntityManager();
@@ -253,7 +248,7 @@ public class UserDAOImpl implements UserDAO {
             em.getTransaction().begin();
             em.persist(entity);
             em.getTransaction().commit();
-            return entity;
+            return findById(entity.getId());
 
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
@@ -266,6 +261,7 @@ public class UserDAOImpl implements UserDAO {
         }
     }
 
+    // ĐÃ SỬA: Gọi findById() sau khi merge để nạp đầy đủ Role kèm theo JOIN FETCH
     @Override
     public User update(User entity) {
         EntityManager em = JpaUtil.getEntityManager();
@@ -274,7 +270,8 @@ public class UserDAOImpl implements UserDAO {
             em.getTransaction().begin();
             User user = em.merge(entity);
             em.getTransaction().commit();
-            return user;
+
+            return findById(user.getId());
 
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
@@ -293,7 +290,6 @@ public class UserDAOImpl implements UserDAO {
         try {
             em.getTransaction().begin();
 
-            // 1. Xóa sạch các dữ liệu liên quan ở các bảng con trong CSDL SQL Server
             try { em.createNativeQuery("DELETE FROM OrderStatusHistory WHERE ChangedBy = :id OR OrderID IN (SELECT OrderID FROM Orders WHERE UserID = :id)").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean OrderStatusHistory: " + e.getMessage()); }
             try { em.createNativeQuery("DELETE FROM OrderDetails WHERE OrderID IN (SELECT OrderID FROM Orders WHERE UserID = :id)").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean OrderDetails: " + e.getMessage()); }
             try { em.createNativeQuery("DELETE FROM Payments WHERE OrderID IN (SELECT OrderID FROM Orders WHERE UserID = :id)").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean Payments: " + e.getMessage()); }
@@ -304,7 +300,6 @@ public class UserDAOImpl implements UserDAO {
             try { em.createNativeQuery("DELETE FROM Carts WHERE UserID = :id").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean Carts: " + e.getMessage()); }
             try { em.createNativeQuery("DELETE FROM Addresses WHERE UserID = :id").setParameter("id", id).executeUpdate(); } catch (Exception e) { System.out.println("Clean Addresses: " + e.getMessage()); }
 
-            // 2. Xóa vĩnh viễn tài khoản người dùng khỏi bảng Users
             em.createNativeQuery("DELETE FROM Users WHERE UserID = :id").setParameter("id", id).executeUpdate();
 
             em.getTransaction().commit();
@@ -315,7 +310,6 @@ public class UserDAOImpl implements UserDAO {
             System.err.println("Hard delete failed, fallback to soft delete & delete retry for user ID: " + id);
             e.printStackTrace();
 
-            // Retry deletion in a separate transaction
             try {
                 EntityManager em2 = JpaUtil.getEntityManager();
                 em2.getTransaction().begin();
@@ -323,7 +317,6 @@ public class UserDAOImpl implements UserDAO {
                 em2.getTransaction().commit();
                 em2.close();
             } catch (Exception ex) {
-                // If hard delete still blocked, set status = 0 so user vanishes from active list
                 try {
                     EntityManager em3 = JpaUtil.getEntityManager();
                     em3.getTransaction().begin();

@@ -18,7 +18,7 @@ import poly.java.Entity.User;
 import java.io.File;
 import java.io.IOException;
 
-@WebServlet({"/profile", "/profile/update"})
+@WebServlet({"/profile", "/profile/update", "/profile/change-password"})
 @MultipartConfig(
         fileSizeThreshold = 1024 * 1024 * 2, // 2MB
         maxFileSize = 1024 * 1024 * 10,      // 10MB
@@ -49,6 +49,49 @@ public class ProfileServlet extends HttpServlet {
         }
 
         String path = req.getServletPath();
+
+        // -------------------------------------------------------------
+        // 1. XỬ LÝ ĐỔI MẬT KHẨU
+        // -------------------------------------------------------------
+        if ("/profile/change-password".equals(path)) {
+            String currentPassword = req.getParameter("currentPassword");
+            String newPassword = req.getParameter("newPassword");
+            String confirmPassword = req.getParameter("confirmPassword");
+
+            if (currentPassword == null || currentPassword.isBlank() ||
+                    newPassword == null || newPassword.isBlank() ||
+                    confirmPassword == null || confirmPassword.isBlank()) {
+                resp.sendRedirect(req.getContextPath() + "/profile?error=missing_pw_fields");
+                return;
+            }
+
+            if (!user.getPassword().equals(currentPassword)) {
+                resp.sendRedirect(req.getContextPath() + "/profile?error=wrong_current_pw");
+                return;
+            }
+
+            if (!newPassword.equals(confirmPassword)) {
+                resp.sendRedirect(req.getContextPath() + "/profile?error=pw_mismatch");
+                return;
+            }
+
+            try {
+                user.setPassword(newPassword);
+                User updatedUser = userDAO.update(user);
+                req.getSession().setAttribute("currentUser", updatedUser);
+
+                resp.sendRedirect(req.getContextPath() + "/profile?success=pw_change_ok");
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+                resp.sendRedirect(req.getContextPath() + "/profile?error=pw_change_failed");
+                return;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 2. XỬ LÝ CẬP NHẬT THÔNG TIN CÁ NHÂN & AVATAR
+        // -------------------------------------------------------------
         if ("/profile/update".equals(path) || "/profile".equals(path)) {
             String fullname = req.getParameter("fullname");
             String phone = req.getParameter("phone");
@@ -60,7 +103,7 @@ public class ProfileServlet extends HttpServlet {
                 return;
             }
 
-            // Handle file upload from computer
+            // Xử lý upload ảnh từ máy tính
             try {
                 Part filePart = req.getPart("avatarFile");
                 if (filePart != null && filePart.getSize() > 0) {

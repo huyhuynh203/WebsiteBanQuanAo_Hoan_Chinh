@@ -9,7 +9,7 @@
         <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto;">Xem, quản lý và cập nhật thông tin cá nhân của bạn</p>
     </div>
 
-    <!-- Thông báo kết quả -->
+    <!-- Thông báo kết quả Cập nhật thông tin -->
     <c:if test="${param.success == 'update_ok'}">
         <div class="form-success" style="margin-bottom: 24px;">Cập nhật thông tin cá nhân thành công!</div>
     </c:if>
@@ -20,16 +20,33 @@
         <div class="form-error" style="margin-bottom: 24px;">Họ và tên không được để trống!</div>
     </c:if>
 
+    <!-- Thông báo kết quả Đổi mật khẩu -->
+    <c:if test="${param.success == 'pw_change_ok'}">
+        <div class="form-success" style="margin-bottom: 24px;">Đổi mật khẩu thành công!</div>
+    </c:if>
+    <c:if test="${param.error == 'wrong_current_pw'}">
+        <div class="form-error" style="margin-bottom: 24px;">Mật khẩu hiện tại không chính xác!</div>
+    </c:if>
+    <c:if test="${param.error == 'pw_mismatch'}">
+        <div class="form-error" style="margin-bottom: 24px;">Mật khẩu mới và nhập lại mật khẩu không khớp nhau!</div>
+    </c:if>
+    <c:if test="${param.error == 'missing_pw_fields'}">
+        <div class="form-error" style="margin-bottom: 24px;">Vui lòng nhập đầy đủ thông tin các trường mật khẩu!</div>
+    </c:if>
+    <c:if test="${param.error == 'pw_change_failed'}">
+        <div class="form-error" style="margin-bottom: 24px;">Đổi mật khẩu thất bại. Vui lòng thử lại!</div>
+    </c:if>
+
     <div class="cart-layout" style="grid-template-columns: 1fr 2fr; gap: 30px; align-items: start;">
-        
+
         <!-- Cột Trái: Ảnh đại diện & Thông tin nhanh -->
         <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; text-align: center; box-shadow: var(--shadow-md);">
             <div style="position: relative; width: 140px; height: 140px; margin: 0 auto 20px; border-radius: 50%; padding: 4px; background: linear-gradient(135deg, var(--accent), #d97706); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);">
-                <img id="avatar-preview" src="${not empty sessionScope.currentUser.avatar ? sessionScope.currentUser.avatar : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" 
-                     alt="Avatar" style="width: 132px; height: 132px; border-radius: 50%; object-fit: cover; background-color: var(--bg-primary); display: block;" 
+                <img id="avatar-preview" src="${not empty sessionScope.currentUser.avatar ? sessionScope.currentUser.avatar : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}"
+                     alt="Avatar" style="width: 132px; height: 132px; border-radius: 50%; object-fit: cover; background-color: var(--bg-primary); display: block;"
                      onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'">
             </div>
-            
+
             <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">${sessionScope.currentUser.fullname}</h3>
             <p style="color: var(--accent); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">
                 ${sessionScope.currentUser.role == 'ADMIN' ? 'Quản Trị Viên' : 'Khách Hàng'}
@@ -48,75 +65,117 @@
             </div>
         </div>
 
-        <!-- Cột Phải: Form cập nhật thông tin -->
-        <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-md);">
-            <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; color: var(--text-primary);">
-                Thông tin chi tiết
-            </h3>
+        <!-- Cột Phải: Thông tin chi tiết & Đổi mật khẩu -->
+        <div style="display: flex; flex-direction: column; gap: 30px;">
 
-            <form action="${pageContext.request.contextPath}/profile/update" method="POST" enctype="multipart/form-data">
-                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                    <div>
-                        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Tên tài khoản (Không thể đổi)</label>
-                        <input type="text" value="${sessionScope.currentUser.username}" readonly 
-                               style="width: 100%; padding: 12px; background-color: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-secondary); cursor: not-allowed; font-size: 0.95rem;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Email (Không thể đổi)</label>
-                        <input type="text" value="${sessionScope.currentUser.email}" readonly 
-                               style="width: 100%; padding: 12px; background-color: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-secondary); cursor: not-allowed; font-size: 0.95rem;">
-                    </div>
-                </div>
+            <!-- Form 1: Cập nhật thông tin -->
+            <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-md);">
+                <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; color: var(--text-primary);">
+                    Thông tin chi tiết
+                </h3>
 
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Họ và Tên</label>
-                    <input type="text" name="fullname" value="${sessionScope.currentUser.fullname}" required 
-                           style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
-                </div>
-
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Số Điện Thoại</label>
-                    <input type="text" name="phone" value="${sessionScope.currentUser.phone}" 
-                           style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
-                </div>
-
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Địa Chỉ Nhận Hàng</label>
-                    <textarea name="address" rows="3" style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem; resize: vertical;">${sessionScope.currentUser.address}</textarea>
-                </div>
-
-                <div style="margin-bottom: 28px;">
-                    <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Ảnh Đại Diện (Avatar)</label>
-                    
-                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                        <button type="button" id="btn-tab-url" onclick="switchAvatarMode('url')" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #000; font-weight: 700; cursor: pointer;">Dán Link URL</button>
-                        <button type="button" id="btn-tab-file" onclick="switchAvatarMode('file')" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary); font-weight: 600; cursor: pointer;">Tải Ảnh Từ Máy Tính</button>
+                <form action="${pageContext.request.contextPath}/profile/update" method="POST" enctype="multipart/form-data">
+                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Tên tài khoản (Không thể đổi)</label>
+                            <input type="text" value="${sessionScope.currentUser.username}" readonly
+                                   style="width: 100%; padding: 12px; background-color: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-secondary); cursor: not-allowed; font-size: 0.95rem;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Email (Không thể đổi)</label>
+                            <input type="text" value="${sessionScope.currentUser.email}" readonly
+                                   style="width: 100%; padding: 12px; background-color: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-secondary); cursor: not-allowed; font-size: 0.95rem;">
+                        </div>
                     </div>
 
-                    <!-- Ô 1: Dán link URL -->
-                    <div id="box-avatar-url">
-                        <input type="text" id="avatar-input" name="avatar" value="${sessionScope.currentUser.avatar}" 
-                               placeholder="Dán link ảnh đại diện từ bên ngoài (https://...)" 
-                               oninput="updateAvatarPreview(this.value)"
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Họ và Tên</label>
+                        <input type="text" name="fullname" value="${sessionScope.currentUser.fullname}" required
                                style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
-                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">Bạn có thể dán đường dẫn ảnh bất kỳ từ internet vào đây.</p>
                     </div>
 
-                    <!-- Ô 2: Tải file từ máy tính -->
-                    <div id="box-avatar-file" style="display: none;">
-                        <input type="file" id="avatar-file-input" name="avatarFile" accept="image/*" 
-                               onchange="previewAvatarFile(this)"
-                               style="width: 100%; padding: 10px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
-                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">Chọn file ảnh đại diện từ máy tính của bạn (JPG, PNG, WEBP...).</p>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Số Điện Thoại</label>
+                        <input type="text" name="phone" value="${sessionScope.currentUser.phone}"
+                               style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
                     </div>
-                </div>
 
-                <div style="text-align: right; border-top: 1px solid var(--border-color); padding-top: 24px;">
-                    <button type="submit" class="btn btn-primary" style="padding: 12px 30px; font-size: 0.95rem;">
-                        <i class="fa-solid fa-save" style="margin-right: 6px;"></i> Lưu Thay Đổi
-                    </button>
-                </div>
-            </form>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Địa Chỉ Nhận Hàng</label>
+                        <textarea name="address" rows="3" style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem; resize: vertical;">${sessionScope.currentUser.address}</textarea>
+                    </div>
+
+                    <div style="margin-bottom: 28px;">
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Ảnh Đại Diện (Avatar)</label>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                            <button type="button" id="btn-tab-url" onclick="switchAvatarMode('url')" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #000; font-weight: 700; cursor: pointer;">Dán Link URL</button>
+                            <button type="button" id="btn-tab-file" onclick="switchAvatarMode('file')" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary); font-weight: 600; cursor: pointer;">Tải Ảnh Từ Máy Tính</button>
+                        </div>
+
+                        <!-- Ô 1: Dán link URL -->
+                        <div id="box-avatar-url">
+                            <input type="text" id="avatar-input" name="avatar" value="${sessionScope.currentUser.avatar}"
+                                   placeholder="Dán link ảnh đại diện từ bên ngoài (https://...)"
+                                   oninput="updateAvatarPreview(this.value)"
+                                   style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">Bạn có thể dán đường dẫn ảnh bất kỳ từ internet vào đây.</p>
+                        </div>
+
+                        <!-- Ô 2: Tải file từ máy tính -->
+                        <div id="box-avatar-file" style="display: none;">
+                            <input type="file" id="avatar-file-input" name="avatarFile" accept="image/*"
+                                   onchange="previewAvatarFile(this)"
+                                   style="width: 100%; padding: 10px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">Chọn file ảnh đại diện từ máy tính của bạn (JPG, PNG, WEBP...).</p>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right; border-top: 1px solid var(--border-color); padding-top: 24px;">
+                        <button type="submit" class="btn btn-primary" style="padding: 12px 30px; font-size: 0.95rem;">
+                            <i class="fa-solid fa-save" style="margin-right: 6px;"></i> Lưu Thay Đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Form 2: Đổi mật khẩu -->
+            <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-md);">
+                <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; color: var(--text-primary);">
+                    <i class="fa-solid fa-key" style="margin-right: 8px; color: var(--accent);"></i>Đổi Mật Khẩu
+                </h3>
+
+                <form action="${pageContext.request.contextPath}/profile/change-password" method="POST">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Mật khẩu hiện tại</label>
+                        <input type="password" name="currentPassword" required
+                               placeholder="Nhập mật khẩu hiện tại"
+                               style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
+                    </div>
+
+                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px;">
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Mật khẩu mới</label>
+                            <input type="password" name="newPassword" required
+                                   placeholder="Nhập mật khẩu mới"
+                                   style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600;">Xác nhận mật khẩu mới</label>
+                            <input type="password" name="confirmPassword" required
+                                   placeholder="Nhập lại mật khẩu mới"
+                                   style="width: 100%; padding: 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem;">
+                        </div>
+                    </div>
+
+                    <div style="text-align: right; border-top: 1px solid var(--border-color); padding-top: 24px;">
+                        <button type="submit" class="btn btn-primary" style="padding: 12px 30px; font-size: 0.95rem;">
+                            <i class="fa-solid fa-lock" style="margin-right: 6px;"></i> Cập Nhật Mật Khẩu
+                        </button>
+                    </div>
+                </form>
+            </div>
+
         </div>
 
     </div>

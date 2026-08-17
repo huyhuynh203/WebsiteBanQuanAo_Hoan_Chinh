@@ -17,8 +17,9 @@ public class User {
     @Column(name = "UserID", nullable = false)
     private Integer id;
 
+    // ĐÃ SỬA: Chuyển FetchType.LAZY thành FetchType.EAGER để luôn nạp Role cùng User
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "RoleID", nullable = false)
     private Role roleID;
 
@@ -147,7 +148,7 @@ public class User {
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
-    // Thêm hàm này vào User.java để JSP gọi currentUser.role không bị lỗi
+
     public String getRole() {
         if (this.roleID != null) {
             return this.roleID.getRoleName();
@@ -178,5 +179,4 @@ public class User {
         }
         return "";
     }
-
 }
